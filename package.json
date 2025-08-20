@@ -1,0 +1,11 @@
+{
+  "name": "learning",
+  "version": "1.0.0",
+  "description": "Learning nodeJs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Sudip",
+  "license": "ISC"
+}
