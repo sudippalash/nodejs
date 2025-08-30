@@ -1,5 +1,6 @@
-const express = require('express');
-const router = express.Router();
+import { Router } from "express";
+
+const router = Router();
 
 // Define a route
 router.get('/', (req, res) => {
@@ -10,5 +11,4 @@ router.get('/users', (req, res) => {
     res.send('this is users route');
 });
 
-// export the router module so that server.js file can use it
-module.exports = router;
+export default router;
