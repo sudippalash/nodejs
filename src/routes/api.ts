@@ -3,7 +3,6 @@ import { createResourceRouter } from "../helpers/ResourceRouter";
 import UserController from "../controllers/UserController";
 
 const app = express();
-app.use(express.json());
 
 const router = createResourceRouter();
 
