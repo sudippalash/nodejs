@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"  // mysql/postgresql
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  active
+  inactive
+  blocked
+}
+
+model User {
+  id    Int    @id @default(autoincrement())
+  name  String
+  email String @unique
+  password  String
+  status Status @default(active)
+  is_blocked  Boolean @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("users") // <-- table name in DB
+}
