@@ -1,17 +1,18 @@
-import { Router } from "express";
+import express, { Request, Response } from "express";
+import { createResourceRouter } from "../helpers/ResourceRouter";
 import UserController from "../controllers/UserController";
 
-const router = Router();
+const app = express();
+app.use(express.json());
+
+const router = createResourceRouter();
 
 // Default route for /api
-router.get('/', (req, res) => {
-    res.send('this is api route');
+router.get('/', (req: Request, res: Response) => {
+    res.json({ message: "API Working" });
 });
 
-router.get("/users", UserController.index);
-router.get("/users/:id", UserController.show);
-router.post("/users/", UserController.create);
-router.put("/users/:id", UserController.update);
-router.delete("/users/:id", UserController.destroy);
+router.resource("/users", UserController);
+app.use(router);
 
 export default router;
