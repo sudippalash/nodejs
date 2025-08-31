@@ -65,6 +65,7 @@ class UserController {
     async store(req: Request, res: Response) {
       const { name, email, password } = req.body;
       const hashedPassword = await hashPassword(password);
+
       try {
         const user = await prisma.user.create({
           data: { name, email, password : hashedPassword }
@@ -78,11 +79,16 @@ class UserController {
     // PUT /users/:id
     async update(req: Request, res: Response) {
       const { id } = req.params;
-      const { name, email } = req.body;
+      const { name, email, password } = req.body;
+      const storeData: any = {name, email};
+      if (! (password === undefined || password === null || password.trim() === "")) {
+        storeData.password = await hashPassword(password);
+      }
+
       try {
         const user = await prisma.user.update({
           where: { id: Number(id) },
-          data: { name, email }
+          data: storeData
         });
         res.json({success: true, message: null, data: user});
       } catch (error) {
