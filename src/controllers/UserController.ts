@@ -7,8 +7,48 @@ const prisma = new PrismaClient();
 class UserController {
     // GET /users
     async index(req: Request, res: Response) {
-      const users = await prisma.user.findMany();
-      res.json({success: true, message: null, data: users});
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = 2;
+      const skip = (page - 1) * limit;
+
+      const { status, name, email } = req.query;
+
+      let filterData: any = {};
+      if (status) {
+        filterData.status = status;
+      }
+      if (name) {
+        filterData.name = name;
+      }
+      if (email) {
+        filterData.email = email;
+      }
+
+      const users = await prisma.user.findMany({
+        where: filterData,
+        skip,
+        take: limit,
+        orderBy: { id: 'desc' },
+        select: { 
+          id: true, 
+          name: true, 
+          email: true, 
+          status: true,
+        },
+      });
+
+      // Total count for pagination
+      const total = await prisma.user.count({
+        where: filterData,
+      });
+
+      const data = {
+        total,
+        page,
+        lastPage: Math.ceil(total / limit),
+        data: users
+      }
+      res.json({success: true, message: null, data});
     }
   
     // GET /users/:id
