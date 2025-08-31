@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
 
 const prisma = new PrismaClient();
 
@@ -23,9 +24,10 @@ class UserController {
     // POST /users
     async store(req: Request, res: Response) {
       const { name, email, password } = req.body;
+      const hashedPassword = await hashPassword(password);
       try {
         const user = await prisma.user.create({
-          data: { name, email, password }
+          data: { name, email, password : hashedPassword }
         });
         res.json({success: true, message: null, data: user});
       } catch (error: any) {
