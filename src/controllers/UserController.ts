@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { z } from "zod";
-import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
+import { createSchema, updateSchema, CreateInput, UpdateInput } from "../validations/User";
+import { hashPassword } from "../helpers/PasswordHelpers";
 import { errorMessage } from "../helpers/ErrorHelpers";
 
 const prisma = new PrismaClient();
@@ -65,14 +65,8 @@ class UserController {
   
     // POST /users
     async store(req: Request, res: Response) {
-      const schema = z.object({
-        name: z.string().nonempty().max(255),
-        email: z.string().nonempty().max(255).email(),
-        password: z.string().min(8).max(16),
-      });
-
       try {
-        const validatedData = schema.parse(req.body);
+        const validatedData: CreateInput = await createSchema.parseAsync(req.body);
         validatedData.password = await hashPassword(validatedData.password);
 
         const user = await prisma.user.create({
@@ -86,17 +80,10 @@ class UserController {
   
     // PUT /users/:id
     async update(req: Request, res: Response) {
-      const schema = z.object({
-        name: z.string().nonempty().max(255),
-        email: z.string().nonempty().max(255).email(),
-        password: z.string().optional().refine((val) => !val || val.length >= 8, {
-          message: "Password must be at least 8 characters",
-        }),
-      });
-
       try {
         const { id } = req.params;
-        const validatedData = schema.parse(req.body);
+
+        const validatedData: UpdateInput = await updateSchema(id).parseAsync(req.body);
         if (validatedData.password) {
           validatedData.password = await hashPassword(validatedData.password);
         }
