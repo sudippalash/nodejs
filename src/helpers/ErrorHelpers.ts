@@ -71,10 +71,10 @@ function makeMessage(issue: any): string {
     
     if (issue.code == 'too_small') {
         // If the minimum allowed characters is greater than 1, show length requirement Otherwise, consider it "required" (for empty strings)
-        errorMsg = issue.minimum > 1 ? `The ${field} field must be at least ${issue.minimum} characters.` : `${fieldName(field)} is required`;
+        errorMsg = issue.minimum > 1 ? `The ${fieldName(field)} field must be at least ${issue.minimum} characters.` : `${fieldName(field)} is required`;
     } else if (issue.code == 'too_big') {
         // Maximum length validation
-        errorMsg = `The ${field} field must be less than or equal to ${issue.maximum} characters.`;
+        errorMsg = `The ${fieldName(field)} field must be less than or equal to ${issue.maximum} characters.`;
     } else if (issue.code == 'invalid_type') {
         // Missing field (undefined) → required
         errorMsg = `${fieldName(field)} is required`;
