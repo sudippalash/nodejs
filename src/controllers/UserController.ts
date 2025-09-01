@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
+import { createSchema, updateSchema, CreateInput, UpdateInput } from "../validations/User";
+import { hashPassword } from "../helpers/PasswordHelpers";
+import { errorMessage } from "../helpers/ErrorHelpers";
 
 const prisma = new PrismaClient();
 
@@ -63,36 +65,36 @@ class UserController {
   
     // POST /users
     async store(req: Request, res: Response) {
-      const { name, email, password } = req.body;
-      const hashedPassword = await hashPassword(password);
-
       try {
+        const validatedData: CreateInput = await createSchema.parseAsync(req.body);
+        validatedData.password = await hashPassword(validatedData.password);
+
         const user = await prisma.user.create({
-          data: { name, email, password : hashedPassword }
+          data: validatedData
         });
         res.json({success: true, message: null, data: user});
-      } catch (error: any) {
-        res.status(400).json({ success: false, message: error.message });
+      } catch (err: any) {
+        res.status(400).json({ success: false, message: errorMessage(err) });
       }
     }
   
     // PUT /users/:id
     async update(req: Request, res: Response) {
-      const { id } = req.params;
-      const { name, email, password } = req.body;
-      const storeData: any = {name, email};
-      if (! (password === undefined || password === null || password.trim() === "")) {
-        storeData.password = await hashPassword(password);
-      }
-
       try {
+        const { id } = req.params;
+
+        const validatedData: UpdateInput = await updateSchema(id).parseAsync(req.body);
+        if (validatedData.password) {
+          validatedData.password = await hashPassword(validatedData.password);
+        }
+
         const user = await prisma.user.update({
           where: { id: Number(id) },
-          data: storeData
+          data: validatedData
         });
         res.json({success: true, message: null, data: user});
-      } catch (error) {
-        res.status(404).json({ success: false, message: "User not found" });
+      } catch (err: any) {
+        res.json({ success: false, message: errorMessage(err) });
       }
     }
   
@@ -104,8 +106,8 @@ class UserController {
           where: { id: Number(id) }
         });
         res.json({success: true, message: `User ${id} deleted` });
-      } catch (error) {
-        res.status(404).json({ success: false, message: "User not found" });
+      } catch (err: any) {
+        res.status(404).json({ success: false, message: err.message || "User not found" });
       }
     }
   }
