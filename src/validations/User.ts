@@ -38,6 +38,5 @@ export const updateSchema = (id: string) => z.object({
   }
 });
 
-// Types
 export type CreateInput = z.infer<typeof createSchema>;
 export type UpdateInput = z.infer<typeof updateSchema>;
