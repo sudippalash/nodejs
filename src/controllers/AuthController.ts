@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { loginRequest, registerRequest, passwordRequest, resetRequest, changePasswordRequest } from "../validations/AuthRequest";
 import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
 import { errorMessage } from "../helpers/ErrorHelpers";
+import { passwordResetEmail } from "../emails/PasswordResetEmail";
 
 const prisma = new PrismaClient();
 
@@ -67,10 +68,12 @@ class AuthController {
         { expiresIn: "15m" }
       );
 
-      // Save token in DB if you want persistence
+      // Send email with reset link
+      await passwordResetEmail(resetToken, { name: user.name || "", email: user.email });
+
       return res.json({
         success: true,
-        message: "Password reset link generated",
+        message: "Password reset link sent to your email",
         resetToken,
       });
     } catch (err: any) {
