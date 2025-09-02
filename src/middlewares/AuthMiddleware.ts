@@ -7,7 +7,7 @@ interface AuthRequest extends Request {
 
 export function AuthMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers["authorization"];
-  if (!header) return res.status(401).json({ error: "No token provided" });
+  if (!header) return res.status(401).json({ success: false, message: "No token provided" });
 
   const token = header.split(" ")[1];
   try {
@@ -17,6 +17,6 @@ export function AuthMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     req.userId = decoded.userId;
     next();
   } catch {
-    return res.status(401).json({ error: "Invalid token" });
+    return res.status(401).json({ success: false, message: "Invalid token" });
   }
 }
