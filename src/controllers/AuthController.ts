@@ -8,10 +8,6 @@ import { passwordResetEmail } from "../emails/PasswordResetEmail";
 
 const prisma = new PrismaClient();
 
-interface AuthRequest extends Request {
-  userId?: number;
-}
-
 class AuthController {
   // Login
   static async login(req: Request, res: Response) {
@@ -110,7 +106,7 @@ class AuthController {
   }
 
   // Current user
-  static async me(req: AuthRequest, res: Response) {
+  static async me(req: Request, res: Response) {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
       select: { id: true, email: true, name: true },
@@ -120,7 +116,7 @@ class AuthController {
   }
 
   // Change password
-  static async changePassword(req: AuthRequest, res: Response) {
+  static async changePassword(req: Request, res: Response) {
     try {
       const validatedData = changePasswordRequest.parse(req.body);
       const { old_password, password } = validatedData;

@@ -1,11 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-interface AuthRequest extends Request {
-  userId?: number;
-}
-
-export function AuthMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export function AuthMiddleware(req: Request, res: Response, next: NextFunction) {
   const header = req.headers["authorization"];
   if (!header) return res.status(401).json({ success: false, message: "No token provided" });
 
