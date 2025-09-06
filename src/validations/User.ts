@@ -39,4 +39,6 @@ export const updateSchema = (id: string) => z.object({
 });
 
 export type CreateInput = z.infer<typeof createSchema>;
-export type UpdateInput = z.infer<typeof updateSchema>;
+
+// For updateSchema, we need to call the function with an id to get the schema
+export type UpdateInput = z.infer<ReturnType<typeof updateSchema>>;
