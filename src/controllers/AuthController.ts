@@ -4,12 +4,11 @@ import jwt from "jsonwebtoken";
 import { loginRequest, registerRequest, passwordRequest, resetRequest, changePasswordRequest } from "../validations/AuthRequest";
 import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
 import { errorMessage } from "../helpers/ErrorHelpers";
-import { passwordResetEmail } from "../emails/PasswordResetEmail";
+import { verifyEmail, passwordResetEmail } from "../emails/AuthEmail";
 
 const prisma = new PrismaClient();
 
 class AuthController {
-  // Login
   static async login(req: Request, res: Response) {
     try {
       const validatedData = loginRequest.parse(req.body);
@@ -33,23 +32,88 @@ class AuthController {
     }
   }
 
-  // Register
   static async register(req: Request, res: Response) {
     try {
       const validatedData = await registerRequest.parseAsync(req.body);
             validatedData.password = await hashPassword(validatedData.password);
 
+      // userData contains everything except password_confirmation
+      const { password_confirmation, ...userData } = validatedData;
+
       const user = await prisma.user.create({
-        data: validatedData
+        data: userData
       });
 
-      res.json({success: true, message: null, data: user});
+      // Generate verify token
+      const verifyToken = jwt.sign(
+        { userId: user.id, purpose: "register" },
+        process.env.JWT_SECRET as string,
+        { expiresIn: "120m" }
+      );
+
+      // Send verify email
+      await verifyEmail(verifyToken, { name: user.name, email: user.email });
+
+      res.json({success: true, message: "A new verification link has been sent to the email address you provided during registration."});
     } catch (err: any) {
       res.status(400).json({ success: false, message: errorMessage(err) });
     }
   }
 
-  // Forgot password
+  static async emailVerify(req: Request, res: Response) {
+    try {
+      const { hash } = req.params;
+
+      const decoded = jwt.verify(hash, process.env.JWT_SECRET as string) as {
+        userId: number;
+        purpose: string;
+      };
+
+      if (decoded.purpose !== "register") {
+        throw new Error("Invalid or expired link");
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId }
+      });
+      if (!user) throw new Error("User not found");
+
+      if (user.email_verified_at) throw new Error("Your email already verified!");
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { email_verified_at: new Date() },
+      });
+
+      return res.json({ success: true, message: "Your email has been successfully verified!" });
+    } catch (err: any) {
+      res.status(400).json({ success: false, message: errorMessage(err) });
+    }
+  }
+
+  static async emailResend(req: Request, res: Response) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.userId } });
+      if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+      if (user.email_verified_at) throw new Error("Your email already verified!");
+
+      // Generate verify token
+      const verifyToken = jwt.sign(
+        { userId: user.id, purpose: "register" },
+        process.env.JWT_SECRET as string,
+        { expiresIn: "15m" }
+      );
+
+      // Send verify email
+      await verifyEmail(verifyToken, { name: user.name, email: user.email });
+
+      res.json({success: true, message: "A new verification link has been sent to the email address you provided during registration."});
+    } catch (err: any) {
+      res.status(400).json({ success: false, message: errorMessage(err) });
+    }
+  }
+
   static async forgotPassword(req: Request, res: Response) {
     try {
       const validatedData = passwordRequest.parse(req.body);
@@ -69,7 +133,7 @@ class AuthController {
 
       return res.json({
         success: true,
-        message: "Password reset link sent to your email",
+        message: "We have emailed your password reset link.",
         resetToken,
       });
     } catch (err: any) {
@@ -77,7 +141,6 @@ class AuthController {
     }
   }
 
-  // Reset password
   static async resetPassword(req: Request, res: Response) {
     try {
       const validatedData = resetRequest.parse(req.body);
@@ -105,14 +168,13 @@ class AuthController {
     }
   }
 
-  // Current user
   static async me(req: Request, res: Response) {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
       select: { id: true, email: true, name: true },
     });
 
-    return res.json({ success: true, data: user});
+    return res.json({ success: true, data: user });
   }
 
   // Change password

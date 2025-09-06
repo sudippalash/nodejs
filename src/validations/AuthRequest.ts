@@ -14,6 +14,10 @@ export const registerRequest = z.object({
     name: z.string().max(255),
     email: z.string().max(255).email(),
     password: z.string().min(8).max(16),
+    password_confirmation: z.string(),
+}).refine((data) => data.password === data.password_confirmation, {
+    message: "The password confirmation does not match",
+    path: ["password"],
 }).superRefine(async (data, ctx) => {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) {
@@ -36,7 +40,7 @@ export const resetRequest = z.object({
     password: z.string().min(8).max(16),
     password_confirmation: z.string(),
 }).refine((data) => data.password === data.password_confirmation, {
-    message: "Passwords do not match",
+    message: "The password confirmation does not match",
     path: ["password"],
 });
 
@@ -46,7 +50,7 @@ export const changePasswordRequest = z.object({
     password: z.string().min(8).max(16),
     password_confirmation: z.string(),
 }).refine((data) => data.password === data.password_confirmation, {
-    message: "Passwords do not match",
+    message: "The password confirmation does not match",
     path: ["password"],
 });
   

@@ -18,8 +18,11 @@ router.post("/register", AuthController.register);
 router.post("/password/email", AuthController.forgotPassword);
 router.post("/password/reset", AuthController.resetPassword);
 router.get("/me", AuthMiddleware, AuthController.me);
-router.post("/change-password", AuthMiddleware, AuthController.changePassword);
 router.post("/logout", AuthMiddleware, AuthController.logout);
+router.get("/email/verify/:hash", AuthController.emailVerify);
+router.post("/email/resend", AuthMiddleware, AuthController.emailResend);
+
+router.post("/change-password", AuthMiddleware, AuthController.changePassword);
 
 router.resource("/users", UserController);
 app.use(router);
