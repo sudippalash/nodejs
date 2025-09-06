@@ -15,14 +15,23 @@ enum Status {
 }
 
 model User {
-  id    Int    @id @default(autoincrement())
+  id Int @id @default(autoincrement())
   name  String
   email String @unique
-  password  String
+  email_verified_at DateTime?
+  password String
   status Status @default(active)
-  is_blocked  Boolean @default(true)
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   @@map("users") // <-- table name in DB
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String @unique
+  token     String
+  createdAt DateTime @default(now())
+
+  @@map("password_resets") // <-- table name in DB
 }
