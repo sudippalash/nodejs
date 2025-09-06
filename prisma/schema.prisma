@@ -26,3 +26,12 @@ model User {
 
   @@map("users") // <-- table name in DB
 }
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String @unique
+  token     String
+  createdAt DateTime @default(now())
+
+  @@map("password_resets") // <-- table name in DB
+}

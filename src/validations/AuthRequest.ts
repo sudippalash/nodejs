@@ -31,12 +31,13 @@ export const registerRequest = z.object({
 
 // Forgot password
 export const passwordRequest = z.object({
-    email: z.string().max(255).email(),
+    email: z.string().email(),
 });
 
 // Reset password
 export const resetRequest = z.object({
     token: z.string(),
+    email: z.string().email(),
     password: z.string().min(8).max(16),
     password_confirmation: z.string(),
 }).refine((data) => data.password === data.password_confirmation, {

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { loginRequest, registerRequest, passwordRequest, resetRequest, changePasswordRequest } from "../validations/AuthRequest";
 import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
@@ -118,18 +119,29 @@ class AuthController {
     try {
       const validatedData = passwordRequest.parse(req.body);
       const { email } = validatedData;
+
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-      // Generate reset token (in real app, send via email)
-      const resetToken = jwt.sign(
-        { userId: user.id, purpose: "password-reset" },
-        process.env.JWT_SECRET as string,
-        { expiresIn: "15m" }
-      );
+      // Generate random token (not JWT)
+      const resetToken = crypto.randomBytes(32).toString("hex");
+
+      // Hash before saving
+      const hashedToken = await hashPassword(resetToken, 10);
+
+      // Delete old reset tokens for this email
+      await prisma.passwordReset.deleteMany({ where: { email } });
+
+      // Store new reset token
+      await prisma.passwordReset.create({
+        data: {
+          email: user.email,
+          token: hashedToken,
+        },
+      });
 
       // Send email with reset link
-      await passwordResetEmail(resetToken, { name: user.name || "", email: user.email });
+      await passwordResetEmail(resetToken, { name: user.name, email: user.email });
 
       return res.json({
         success: true,
@@ -144,23 +156,40 @@ class AuthController {
   static async resetPassword(req: Request, res: Response) {
     try {
       const validatedData = resetRequest.parse(req.body);
-      const { token, password } = validatedData;
+      const { token, email, password } = validatedData;
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
-        userId: number;
-        purpose: string;
-      };
+      // Find reset record
+      const resetRecord = await prisma.passwordReset.findFirst({
+        where: { email },
+        orderBy: { createdAt: "desc" },
+      });
 
-      if (decoded.purpose !== "password-reset") {
-        throw new Error("Invalid or expired token");
+      if (!resetRecord) {
+        return res.status(400).json({ success: false, message: "Invalid or expired token" });
       }
 
-      const hashedPassword = await hashPassword(password, 10);
+      // Check expiry (valid for 60 minutes)
+      const tokenAgeMinutes = (Date.now() - resetRecord.createdAt.getTime()) / (1000 * 60);
+      if (tokenAgeMinutes > 60) {
+        await prisma.passwordReset.delete({ where: { id: resetRecord.id } });
+        return res.status(400).json({ success: false, message: "Token expired" });
+      }
 
+      // Compare token
+      const isMatch = await verifyPassword(token, resetRecord.token);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: "Invalid token" });
+      }
+
+      // Update user password
+      const hashedPassword = await hashPassword(password, 10);
       await prisma.user.update({
-        where: { id: decoded.userId },
+        where: { email },
         data: { password: hashedPassword },
       });
+
+      // Delete all reset tokens for this email
+      await prisma.passwordReset.deleteMany({ where: { email } });
 
       return res.json({ success: true, message: "Password reset successfully" });
     } catch (err: any) {
