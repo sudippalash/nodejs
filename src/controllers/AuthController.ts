@@ -94,7 +94,7 @@ class AuthController {
 
   static async emailResend(req: Request, res: Response) {
     try {
-      const user = await prisma.user.findUnique({ where: { id: req.userId } });
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
       if (user.email_verified_at) throw new Error("Your email already verified!");
@@ -199,7 +199,7 @@ class AuthController {
 
   static async me(req: Request, res: Response) {
     const user = await prisma.user.findUnique({
-      where: { id: req.userId },
+      where: { id: req.user.id },
       select: { id: true, email: true, name: true },
     });
 
@@ -212,7 +212,7 @@ class AuthController {
       const validatedData = changePasswordRequest.parse(req.body);
       const { old_password, password } = validatedData;
 
-      const user = await prisma.user.findUnique({ where: { id: req.userId } });
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
       const valid = await verifyPassword(old_password, user.password);

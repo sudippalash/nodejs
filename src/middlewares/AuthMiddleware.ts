@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const header = req.headers["authorization"];
   if (!header) return res.status(401).json({ success: false, message: "No token provided" });
 
@@ -13,22 +13,24 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
       userId: number;
     };
-    req.userId = decoded.userId;
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user) return res.status(401).json({ success: false, message: "User not found" });
+
+    req.user = user;
     next();
   } catch {
-    return res.status(401).json({ success: false, message: "Invalid token" });
+    return res.status(401).json({ success: false, message: "Invalid or expired token" });
   }
 }
 
 export async function verifiedMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
-    if (!req.userId) {
+    if (!req.user) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
-
-    const user = await prisma.user.findUnique({ where: { id: req.userId } });
-
-    if (!user || !user.email_verified_at) {
+  
+    if (!req.user.email_verified_at) {
       return res.status(403).json({ success: false, message: "Email not verified" });
     }
 
