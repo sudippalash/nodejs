@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { createRouter } from "../helpers/Router";
 import { authMiddleware, verifiedMiddleware } from "../middlewares/AuthMiddleware";
 import AuthController from "../controllers/AuthController";
+import ProfileController from "../controllers/ProfileController";
 import UserController from "../controllers/UserController";
 
 const app = express();
@@ -25,6 +26,9 @@ router.group([authMiddleware], (r) => {
 
 router.group([authMiddleware, verifiedMiddleware], (r) => {
     r.get("/dashboard", (req: Request, res: Response) => res.json({ success: true, message: "Welcome to your dashboard!" }));
+    
+    router.post("/profile/update-details", authMiddleware, ProfileController.updateDetails);
+    router.post("/profile/update-password", authMiddleware, ProfileController.updatePassword);
 
     r.resource("/users", UserController);
 });
