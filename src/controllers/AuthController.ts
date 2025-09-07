@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { loginRequest, registerRequest, passwordRequest, resetRequest, changePasswordRequest } from "../validations/AuthRequest";
+import { loginRequest, registerRequest, passwordRequest, resetRequest } from "../validations/AuthRequest";
 import { hashPassword, verifyPassword } from "../helpers/PasswordHelpers";
 import { errorMessage } from "../helpers/ErrorHelpers";
 import { verifyEmail, passwordResetEmail } from "../emails/AuthEmail";
@@ -204,31 +204,6 @@ class AuthController {
     });
 
     return res.json({ success: true, data: user });
-  }
-
-  // Change password
-  static async changePassword(req: Request, res: Response) {
-    try {
-      const validatedData = changePasswordRequest.parse(req.body);
-      const { old_password, password } = validatedData;
-
-      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-      if (!user) return res.status(404).json({ success: false, message: "User not found" });
-
-      const valid = await verifyPassword(old_password, user.password);
-      if (!valid) return res.status(400).json({ success: false, message: "Invalid old password" });
-
-      const hashedPassword = await hashPassword(password, 10);
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { password: hashedPassword },
-      });
-
-      return res.json({ success: true, message: "Password updated" });
-    } catch (err: any) {
-      res.status(400).json({ success: false, message: errorMessage(err) });      
-    }
   }
 
   // Logout (JWT → client just deletes token)

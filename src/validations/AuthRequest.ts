@@ -44,19 +44,8 @@ export const resetRequest = z.object({
     message: "The password confirmation does not match",
     path: ["password"],
 });
-
-// Reset password
-export const changePasswordRequest = z.object({
-    old_password: z.string(),
-    password: z.string().min(8).max(16),
-    password_confirmation: z.string(),
-}).refine((data) => data.password === data.password_confirmation, {
-    message: "The password confirmation does not match",
-    path: ["password"],
-});
   
 export type LoginInput = z.infer<typeof loginRequest>;
 export type RegisterInput = z.infer<typeof registerRequest>;
 export type PasswordInput = z.infer<typeof passwordRequest>;
 export type ResetInput = z.infer<typeof resetRequest>;
-export type ChangePasswordInput = z.infer<typeof changePasswordRequest>;
