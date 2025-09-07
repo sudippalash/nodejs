@@ -19,16 +19,16 @@ router.post("/password/reset", AuthController.resetPassword);
 router.get("/email/verify/:hash", AuthController.emailVerify);
 
 router.group([authMiddleware], (r) => {
-    r.get("/me", authMiddleware, AuthController.me);
-    r.post("/logout", authMiddleware, AuthController.logout);
-    r.post("/email/resend", authMiddleware, AuthController.emailResend);
+    r.get("/me", AuthController.me);
+    r.post("/logout", AuthController.logout);
+    r.post("/email/resend", AuthController.emailResend);
 });
 
 router.group([authMiddleware, verifiedMiddleware], (r) => {
     r.get("/dashboard", (req: Request, res: Response) => res.json({ success: true, message: "Welcome to your dashboard!" }));
     
-    router.post("/profile/update-details", authMiddleware, ProfileController.updateDetails);
-    router.post("/profile/update-password", authMiddleware, ProfileController.updatePassword);
+    r.post("/profile/update-details", ProfileController.updateDetails);
+    r.post("/profile/update-password", ProfileController.updatePassword);
 
     r.resource("/users", UserController);
 });
