@@ -10,11 +10,17 @@ export interface ResourceController {
   destroy?: RequestHandler;
 }
 
-export function createResourceRouter() {
-  const router = Router();
+// Extra type so both `resource()` and `group()` exist
+export type ResourceRouter = Router & {
+  resource: (path: string, controller: ResourceController) => Router;
+  group: (middlewares: any[], callback: (r: ResourceRouter) => void) => void;
+};
 
-  // Extend router with .resource()
-  (router as any).resource = function (path: string, controller: ResourceController) {
+export function createRouter(): ResourceRouter {
+  const router = Router() as ResourceRouter;
+
+  // resource()
+  router.resource = function (path: string, controller: ResourceController) {
     if (controller.index) this.get(path, controller.index);
     if (controller.create) this.get(`${path}/create`, controller.create);
     if (controller.store) this.post(path, controller.store);
@@ -25,8 +31,15 @@ export function createResourceRouter() {
     return this;
   };
 
-  // Type definition so TS knows about .resource()
-  return router as Router & {
-    resource: (path: string, controller: ResourceController) => Router;
+  // group()
+  router.group = function (middlewares: any[], callback: (r: ResourceRouter) => void) {
+    const r = createRouter();
+    if (middlewares && middlewares.length) {
+      r.use(...middlewares);
+    }
+    callback(r);
+    this.use(r);
   };
+
+  return router;
 }
