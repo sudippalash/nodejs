@@ -10,7 +10,7 @@ import { verifyEmail, passwordResetEmail } from "../emails/AuthEmail";
 const prisma = new PrismaClient();
 
 class AuthController {
-  static async login(req: Request, res: Response) {
+  async login(req: Request, res: Response) {
     try {
       const validatedData = loginRequest.parse(req.body);
       const { email, password } = validatedData;
@@ -33,7 +33,7 @@ class AuthController {
     }
   }
 
-  static async register(req: Request, res: Response) {
+  async register(req: Request, res: Response) {
     try {
       const validatedData = await registerRequest.parseAsync(req.body);
             validatedData.password = await hashPassword(validatedData.password);
@@ -61,7 +61,7 @@ class AuthController {
     }
   }
 
-  static async emailVerify(req: Request, res: Response) {
+  async emailVerify(req: Request, res: Response) {
     try {
       const { hash } = req.params;
 
@@ -92,7 +92,7 @@ class AuthController {
     }
   }
 
-  static async emailResend(req: Request, res: Response) {
+  async emailResend(req: Request, res: Response) {
     try {
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       if (!user) return res.status(404).json({ success: false, message: "User not found" });
@@ -115,7 +115,7 @@ class AuthController {
     }
   }
 
-  static async forgotPassword(req: Request, res: Response) {
+  async forgotPassword(req: Request, res: Response) {
     try {
       const validatedData = passwordRequest.parse(req.body);
       const { email } = validatedData;
@@ -153,7 +153,7 @@ class AuthController {
     }
   }
 
-  static async resetPassword(req: Request, res: Response) {
+  async resetPassword(req: Request, res: Response) {
     try {
       const validatedData = resetRequest.parse(req.body);
       const { token, email, password } = validatedData;
@@ -197,7 +197,7 @@ class AuthController {
     }
   }
 
-  static async me(req: Request, res: Response) {
+  async me(req: Request, res: Response) {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { id: true, email: true, name: true },
@@ -206,12 +206,12 @@ class AuthController {
     return res.json({ success: true, data: user });
   }
 
-  // Logout (JWT → client just deletes token)
-  static async logout(req: Request, res: Response) {
+  // (JWT → client just deletes token)
+  async logout(req: Request, res: Response) {
     // With JWT, logout is usually handled client-side (delete token).
     // If you want "blacklist" logic, you'd store invalid tokens in DB/Redis.
     return res.json({ success: true, message: "Logged out Successfully" });
   }
 }
 
-export default AuthController;
+export default new AuthController();
